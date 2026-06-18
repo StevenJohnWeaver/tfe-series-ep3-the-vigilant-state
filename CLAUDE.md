@@ -91,6 +91,10 @@ policy-evaluation payoff.
   `terraform stacks validate` both currently fail locally with a stacksplugin signature-auth
   error — Stack-level HCL can only be validated by actually pushing to HCP Terraform, not
   locally
+- Stacks identity tokens do **not** include a `terraform_workspace_name` claim — that claim
+  only exists in workspace runs. Vault JWT roles for Stacks must use `user_claim="sub"`.
+  Using `user_claim="terraform_workspace_name"` gives a 400 "claim not found in token" error
+  at plan time. Already confirmed: `user_claim="sub"` works.
 - HCP Terraform workspace/Stack dynamic-credential env vars or identity tokens must be
   configured correctly per the Stack's deployment inputs, not bolted on after — easy to
   mis-categorize

@@ -62,38 +62,40 @@ EOF
 ## 3. Create JWT Roles
 
 HCP Terraform Stacks issue OIDC `identity_token` JWTs (configured in
-`deployments.tfdeploy.hcl`). The audience is `vault.workload.identity`. These roles use
-`user_claim="terraform_workspace_name"` — the simple form that works for both Stacks and
-workspaces without needing to pin a specific `sub` claim.
+`deployments.tfdeploy.hcl`). The audience is `vault.workload.identity`.
+
+**Important:** Stacks identity tokens do NOT include a `terraform_workspace_name` claim —
+that claim only exists on workspace runs. Use `user_claim="sub"` instead, which is always
+present. The Stacks `sub` claim follows this format:
+`organization:<org>:project:<project>:stack:<stack-name>:deployment:<deployment-name>:operation:<operation>`
 
 ```shell
 vault write auth/jwt/role/hcp-terraform-ep3-dev \
   role_type="jwt" \
   bound_audiences="vault.workload.identity" \
-  user_claim="terraform_workspace_name" \
+  user_claim="sub" \
   policies="ep3-dev" \
   ttl="1h"
 
 vault write auth/jwt/role/hcp-terraform-ep3-staging \
   role_type="jwt" \
   bound_audiences="vault.workload.identity" \
-  user_claim="terraform_workspace_name" \
+  user_claim="sub" \
   policies="ep3-staging" \
   ttl="1h"
 
 vault write auth/jwt/role/hcp-terraform-ep3-prod \
   role_type="jwt" \
   bound_audiences="vault.workload.identity" \
-  user_claim="terraform_workspace_name" \
+  user_claim="sub" \
   policies="ep3-prod" \
   ttl="1h"
 ```
 
 > **Tightening for production:** add a `bound_claims` constraint to pin the role to the
-> specific Stack and deployment. For Stacks, the `sub` claim format is:
-> `organization:<org>:project:<project>:stack:<stack-name>:deployment:<deployment-name>:operation:<operation>`
-> See [HCP Terraform OIDC claims docs](https://developer.hashicorp.com/terraform/cloud-docs/workspaces/dynamic-provider-credentials/workload-identity-tokens)
-> for the authoritative list of claims for Stacks.
+> specific Stack and deployment, using the `sub` format above with glob matching:
+> `bound_claims_type="glob"` and
+> `bound_claims='{"sub":"organization:<org>:project:*:stack:<stack-name>:deployment:development:operation:*"}'`
 
 ---
 
